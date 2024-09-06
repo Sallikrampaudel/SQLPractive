@@ -1,3 +1,4 @@
+"""
 Q6 - Table: ActorDirector
 +-------------+---------+
 | Column Name | Type    |
@@ -37,7 +38,7 @@ Explanation: The only pair is (1, 1) where they cooperated exactly 3 times.
 has context menu
 
 Answer:
-
+"""
 SELECT actor_id, director_id 
 FROM ActorDirector G
 ROUP BY actor_id,director_id
