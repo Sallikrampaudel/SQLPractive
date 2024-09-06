@@ -1,3 +1,4 @@
+"""
 Question:
 Table: Tweets
 
@@ -41,6 +42,7 @@ Tweet 2 has length = 32. It is an invalid tweet.
 
 
 Answer:
+"""
 -- Write your PostgreSQL query statement below
 SELECT tweet_id FROM Tweets
 WHERE LENGTH(content) >15;
