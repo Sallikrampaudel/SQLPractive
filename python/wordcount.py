@@ -1,4 +1,3 @@
-
 def list_to_dict(list):
     counter = {}
     for word in list:
@@ -20,11 +19,9 @@ def frequecy(dict):
         if dict[maxkey]==dict[y]:
             dict[maxkey] = dict[y]
             new_list.append(y)
-
     return new_list
 
 if __name__ == '__main__' :
-
     input_paragraph = "Hello world Hello world This world is full of surprises Surprises are everywhere; surprises are fun"
     words=input_paragraph.lower().split()
     dist = list_to_dict(words)
