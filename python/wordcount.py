@@ -1,3 +1,25 @@
+"""
+Problem Statement:
+Write a Python function that counts the frequency of each word in a given paragraph. The function should return the result as a dictionary. Additionally, provide a way to retrieve the most frequently occurring word(s) from this dictionary
+ 
+input_paragraph = "Hello world Hello world This world is full of surprises Surprises are everywhere; surprises are fun"
+ 
+{
+    'hello': 2,
+    'world': 3,
+    'this': 1,
+    'is': 1,
+    'full': 1,
+    'of': 1,
+    'surprises': 3,
+    'are': 3,
+    'everywhere': 1,
+    'fun': 1
+}
+
+Most frequent word(s): ['world', 'surprises']
+
+
 def list_to_dict(list):
     counter = {}
     for word in list:
