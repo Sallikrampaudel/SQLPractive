@@ -1,0 +1,144 @@
+"""
+Business Use Case: Sales Analytics in Hive
+Problem Statement
+A retail company wants to analyze its sales data using Hive. The business needs to understand the following metrics:
+1. Total sales by product category.
+2. Average sales per region.
+3. Top 3 products by total sales.
+4. Identify which regions have a higher-than-average sales amount.
+
+The company has the following datasets:
+1. Sales data containing product sales information.
+2. Product data containing product categories and other details.
+3. Region data containing regional sales details.
+""""
+Sample Data
+Sales Table (sales_data)
+Columns:
+- sale_id: INT
+- product_id: INT
+- region_id: INT
+- sale_amount: FLOAT
+- sale_date: DATE
+
+Sample Data:
+1, 101, 1, 500.00, 2023-08-01
+2, 102, 1, 600.00, 2023-08-02
+3, 103, 2, 700.00, 2023-08-03
+4, 104, 2, 800.00, 2023-08-04
+5, 101, 3, 400.00, 2023-08-05
+Product Table (product_data)
+Columns:
+- product_id: INT
+- product_name: STRING
+- category: STRING
+
+Sample Data:
+101, Laptop, Electronics
+102, Mobile, Electronics
+103, Chair, Furniture
+104, Table, Furniture
+Region Table (region_data)
+Columns:
+- region_id: INT
+- region_name: STRING
+
+Sample Data:
+Answer:
+Steps to create a file to create a table
+
+Step 1: Create Files Using nano and Paste Data
+Example Command: nano sales_data.csv
+Step 2: Upload Files to Hadoop (HDFS)
+1.	Create directories in HDFS for the datasets:
+hadoop fs -mkdir /user/hive/warehouse/sales_data
+hadoop fs -mkdir /user/hive/warehouse/product_data
+hadoop fs -mkdir /user/hive/warehouse/region_data
+2.	Upload the files to HDFS:
+hadoop fs -put sales_data.csv /user/hive/warehouse/sales_data/
+hadoop fs -put product_data.csv /user/hive/warehouse/product_data/
+hadoop fs -put region_data.csv /user/hive/warehouse/region_data/
+Step 3: Create Hive Tables
+1. Create Hive table for Sales Data
+CREATE EXTERNAL TABLE IF NOT EXISTS sales_data (
+    sale_id INT,
+    product_id INT,
+    region_id INT,
+    sale_amount FLOAT,
+    sale_date DATE
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+STORED AS TEXTFILE
+LOCATION '/user/hive/warehouse/sales_data/';
+2. Create Hive table for Product Data
+CREATE EXTERNAL TABLE IF NOT EXISTS product_data (
+    product_id INT,
+    product_name STRING,
+    category STRING
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+STORED AS TEXTFILE
+LOCATION '/user/hive/warehouse/product_data/';
+3. Create Hive table for Region Data
+CREATE EXTERNAL TABLE IF NOT EXISTS region_data (
+    region_id INT,
+    region_name STRING
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+STORED AS TEXTFILE
+LOCATION '/user/hive/warehouse/region_data/';
+
+Solution To Query
+1. Total Sales by Product Category
+Query:
+SELECT p.category, SUM(s.sale_amount) AS total_sales FROM sales_data s JOIN product_data p ON s.product_id = p.product_id GROUP BY p.category;
+
+Expected Output:
+| category    | total_sales |
+|-------------|-------------|
+| Electronics | 1500.00     |
+| Furniture   | 1500.00     |
+2. Average Sales Per Region
+Query:
+SELECT r.region_name, AVG(s.sale_amount) AS avg_sales FROM sales_data s
+JOIN region_data r ON s.region_id = r.region_id GROUP BY r.region_name;
+
+Expected Output:
+| region_name | avg_sales   |
+|-------------|-------------|
+| North       | 550.00      |
+| South       | 750.00      |
+| East        | 400.00      |
+3. Top 3 Products by Total Sales
+Query:
+SELECT p.product_name, SUM(s.sale_amount) AS total_sales
+FROM sales_data s
+JOIN product_data p ON s.product_id = p.product_id
+GROUP BY p.product_name
+ORDER BY total_sales DESC
+LIMIT 3;
+
+Expected Output:
+| product_name | total_sales |
+|--------------|-------------|
+| Chair        | 700.00      |
+| Table        | 800.00      |
+| Laptop       | 900.00      |
+4. Regions with Higher-than-Average Sales
+Query:
+WITH avg_sales_all AS (
+    SELECT AVG(sale_amount) AS avg_sales FROM sales_data
+)
+SELECT r.region_name, SUM(s.sale_amount) AS total_sales
+FROM sales_data s
+JOIN region_data r ON s.region_id = r.region_id
+GROUP BY r.region_name
+HAVING SUM(s.sale_amount) > (SELECT avg_sales FROM avg_sales_all);
+
+Expected Output:
+| region_name | total_sales |
+|-------------|-------------|
+| South       | 1500.00     |
