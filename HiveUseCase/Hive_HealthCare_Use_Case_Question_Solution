@@ -1,0 +1,174 @@
+Business Use Case: Healthcare Data Analytics with Hive Partitioning and Bucketing
+Problem Statement
+A healthcare organization processes vast amounts of medical records, patient visits, and prescription data. This data is used to analyze healthcare trends, such as:
+1. Patient Visits by date and region.
+2. Top Prescribed Drugs in different regions and time periods.
+3. Patient Demographics analysis for targeted health programs.
+
+Given the large scale of the dataset, querying the data for reports becomes slow without proper optimization. The organization wants to:
+- Optimize queries to retrieve data based on visit date and region for reporting purposes.
+- Speed up queries for specific prescription drug trends and patient demographics.
+- Use partitioning and bucketing to manage the dataset efficiently in Hive, improving query performance and storage optimization.
+Sample Data
+Medical Visits Table (medical_visits)
+Columns:
+- visit_id: INT
+- patient_id: INT
+- region: STRING
+- visit_date: DATE
+- diagnosis: STRING
+- treatment: STRING
+
+Sample Data:
+1, 101, North, 2023-09-01, Hypertension, Medication
+2, 102, South, 2023-09-02, Diabetes, Insulin
+3, 103, East, 2023-09-03, Flu, Antiviral
+4, 104, North, 2023-09-04, Asthma, Inhaler
+5, 105, South, 2023-09-05, Hypertension, Medication
+Prescription Data Table (prescriptions)
+Columns:
+- prescription_id: INT
+- visit_id: INT
+- patient_age: INT
+- patient_gender: STRING
+- drug_name: STRING
+- dosage: STRING
+- region: STRING
+- prescription_date: DATE
+
+Sample Data:
+1, 1, 45, Male, Lisinopril, 10mg, North, 2023-09-01
+2, 2, 60, Female, Metformin, 500mg, South, 2023-09-02
+3, 3, 25, Male, Tamiflu, 75mg, East, 2023-09-03
+4, 4, 50, Female, Albuterol, 90mcg, North, 2023-09-04
+5, 5, 70, Male, Lisinopril, 20mg, South, 2023-09-05
+
+
+Solution: Using Partitioning and Bucketing in Hive for Healthcare Data
+
+-	Create a file in local using nano.
+-	Create a directory In Hadoop: Hadoop fs -mkdir -p /path
+-	Put file from local to Hadoop ; hadoop fs -put /path/to/local/file /path/to/hdfs/file
+-	Create a non-partitioned table: 
+CREATE TABLE medical_visits (
+    visit_id INT,
+    patient_id INT,
+    region STRING,
+    visit_date DATE,
+    diagnosis STRING,
+    treatment STRING
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+STORED AS TEXTFILE;
+
+-	Load File: 
+LOAD DATA INPATH '/hdfs/path/medical_visits.csv' INTO TABLE medical_visits;
+
+-	Create a non partitions table: 
+CREATE TABLE prescriptions (
+    prescription_id INT,
+    visit_id INT,
+    patient_age INT,
+    patient_gender STRING,
+    drug_name STRING,
+    dosage STRING,
+    region STRING,
+    prescription_date DATE
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+STORED AS TEXTFILE;
+
+Load file: 
+LOAD DATA INPATH '/hdfs/path/prescriptions.csv'
+INTO TABLE prescriptions;
+
+Then Create a partitioned table :
+1. Partitioning
+Partition the data by visit_date and region. This allows the system to reduce the amount of data scanned when querying for specific dates or regions.
+•	- Partition on: visit_date, region
+2. Bucketing
+Use bucketing on patient_age and drug_name. Bucketing will improve performance when querying for specific age groups or prescription drugs.
+•	- Bucket on: patient_age, drug_name
+
+3. Create Table with Partitioning and Bucketing
+Hive Query to create the partitioned and bucketed table for medical visits and prescriptions:
+
+CREATE TABLE medical_visits (
+    visit_id INT,
+    patient_id INT,
+    diagnosis STRING,
+    treatment STRING
+)
+PARTITIONED BY (visit_date STRING, region STRING)
+CLUSTERED BY (diagnosis, patient_id) INTO 10 BUCKETS
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+STORED AS ORC;
+
+CREATE TABLE prescriptions (
+    prescription_id INT,
+    visit_id INT,
+    patient_age INT,
+    patient_gender STRING,
+    drug_name STRING,
+    dosage STRING
+)
+PARTITIONED BY (prescription_date STRING, region STRING)
+CLUSTERED BY (patient_age, drug_name) INTO 10 BUCKETS
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+STORED AS ORC;
+
+
+4. Load Data into Partitioned and Bucketed Tables
+When loading data, specify the partition values:
+
+LOAD DATA INPATH '/path/to/medical_visits_2023-09-01_North.csv'
+INTO TABLE medical_visits
+PARTITION (visit_date='2023-09-01', region='North');
+
+LOAD DATA INPATH '/path/to/prescriptions_2023-09-01_North.csv'
+INTO TABLE prescriptions
+PARTITION (prescription_date='2023-09-01', region='North');
+
+Or 
+overwrite data form non partitioned to partitioned
+
+insert overwrite table medical_visits partition(visit_date,region) select visit_id, patient_id, diagnosis, treatment from npmedical;
+show partitions partition_date;
+
+insert overwrite table prescriptions partition(prescription_date, region) select prescription_id, visit_id, patient_age, patient_gender, drug_name, dosage, prescription_date, region from npprescriptions;
+show partitions partition_date;
+
+5. Query Optimizations Using Partitioning and Bucketing
+a. Patient Visits by Region and Date
+To query patient visits for a specific region and date:
+
+SELECT COUNT(visit_id) AS total_visits
+FROM medical_visits
+WHERE visit_date = '2023-09-01' AND region = 'North';
+
+b. Top Prescribed Drugs by Region
+To find the top prescribed drugs in a specific region:
+
+SELECT drug_name, COUNT(drug_name) AS total_prescriptions
+FROM prescriptions
+WHERE region = 'North'
+GROUP BY drug_name
+ORDER BY total_prescriptions DESC;
+
+c. Patient Demographic Analysis for Drug Prescriptions
+To analyze the patient demographics for a specific drug, say Lisinopril:
+
+SELECT patient_age, patient_gender, COUNT(drug_name) AS prescriptions
+FROM prescriptions
+WHERE drug_name = 'Lisinopril'
+GROUP BY patient_age, patient_gender;
+
+6. Advantages of Partitioning and Bucketing
+- **Partitioning**: Optimizes data retrieval for time-based and regional queries, reducing scan time for large datasets.
+- **Bucketing**: Improves query performance for specific patient demographics and drug prescriptions by narrowing down the data scanned within partitions.
+Conclusion
+Partitioning and bucketing in Hive improve query performance by optimizing data storage and retrieval for healthcare data. Partitioning by visit_date and region helps speed up queries for patient visits, while bucketing by patient_age and drug_name enhances performance for prescription trend analysis and patient demographics analysis.
