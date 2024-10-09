@@ -68,6 +68,5 @@ def dataFrame():
         "SELECT customer_id, SUM(price * quantity) as total_spent FROM transactions GROUP BY customer_id")
     print(sql_result.show())
 
-
 if __name__ == '__main__':
     dataFrame()
