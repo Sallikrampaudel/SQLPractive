@@ -1,0 +1,73 @@
+
+Employee.csv
+EMPLOYEE_ID,NAME,SALARY,DEPARTMENT_ID,JOINING_DATE
+100,'Jennifer',4400,10,'2017-01-05'
+101,'Michael',13000,10,'2018-08-24'
+102,'Pat',6000,10,'2018-12-10'
+103,'Den', 11000,20,'2019-02-17'
+104,'Alexander',3100,20,'2019-07-01'
+105,'Shelli',2900,20,'2020-04-22'
+106,'Sigal',2800,30,'2020-09-05'
+107,'Guy',2600,30,'2021-05-25'
+108,'Karen',2500,30,'2021-12-21'
+
+
+1.	Create an Employee  table in database bootcamp and in schema snow.
+a.	Requirements :
+i.	Create a table with name as Employee on Employee.csv
+ii.	Copy data from snowflake Employee table to a output S3 dir.
+b.	Expectations - To submit followings 
+i.	Commands to create table and load data.
+ii.	Commands to copy data from snowflake table to s3 partitioned dir
+2.	Create a sales table in database bootcamp and in schema snow.
+a.	Requirements :
+i.	Unload the data for sample_data_dev.tickit.sales from redshift to s3 in a parquet file. This data should be loaded in snowflake staging dir in a separate folder.
+ii.	Now create a sales table in snowflake in this unloaded data.
+iii.	
+b.	Expectations - I want you to provide / submit followings
+i.	Redshift unload script.
+ii.	Copy command which will load the parquet data from s3 to snowflake table.
+iii.	Note : I want you to load the data in the snowflake table into the individual cells not as json records.
+
+
+
+ANSWER
+
+
+Commands to create table and load data.
+CREATE TABLE Employee (
+	    EMPLOYEE_ID INT,
+	    NAME STRING,
+	    SALARY FLOAT,
+	    DEPARTMENT_ID INT,
+	    JOINING_DATE DATE
+);
+
+
+copy into Employee from @S3STAGE/Employee.csv
+FILE_FORMAT = (TYPE= 'CSV' SKIP_HEADER=1 DATE_FORMAT = 'YYYY-MM-DD')
+PATTERN='.*.csv';
+
+
+
+COPY INTO @S3STAGE/snow/
+FROM EMPLOYEE
+PARTITION BY(DEPARTMENT_ID);
+
+Redshift UNLOAD Command:
+UNLOAD ('SELECT * FROM sample_data_dev.tickit.sales')
+TO 's3://salik-bootcamp/snowflake/sales/'
+iam_role 'arn:aws:iam::654654294059:role/redshift_admin'
+FORMAT AS PARQUET
+ALLOWOVERWRITE;
+
+CREATE TABLE sales(salesid int, listid int, sellerid int, buyerid int, eventid int, dateid int, qtysold int,pricepaid numeric(8,2),commission numeric(8,2),saletime TIMESTAMP)
+
+Snowflake COPY Command:
+copy into bootcamp.snow.sales from 
+(SELECT $1:salesid, $1:listid,$1:sellerid, $1:buyerid,$1:eventid,$1:dateid, $1:qtysold,$1:pricepaid, $1:commission,$1:saletime
+from  @REDSHIFT_TASK/parquet_file) 
+FILE_FORMAT=(TYPE= 'PARQUET')
+PATTERN= '.*.parquet';
+
+
