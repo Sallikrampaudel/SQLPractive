@@ -30,7 +30,6 @@ The query result format is in the following example.
 """
 
 ---ANSWER:
-SELECT Employee.name, Bonus.bonus 
-FROM Employee
-JOIN Bonus ON Employee.empId = Bonus.empId
-WHERE bonus<1000;
+SELECT E.name, B.bonus FROM Employee E
+LEFT JOIN Bonus B ON E.empId = B.empId
+WHERE bonus < 1000 OR bonus IS NULL;
